@@ -469,22 +469,91 @@ export class TelegramUpdate {
       `https://api.dexscreener.com/latest/dex/tokens/${contractAddress}`,
     );
     const data = await response.json();
-    const pair = data.pairs[0] || null;
+    const pair = data.pairs && data.pairs.length > 0 ? data.pairs[0] : null;
+    let tokenMessage = '';
+    let chainId = 0;
     if (!pair) {
-      return;
-    }
-    const tokenMessage =
-      `*${pair.baseToken.name} (${pair.baseToken.symbol})* 🎯\n\n` +
-      `*Price:* $${parseFloat(pair.priceUsd).toFixed(4)}\n` +
-      `*24h Change:* ${pair.priceChange.h24}%\n\n` +
-      `*Liquidity:* $${Math.round(pair.liquidity.usd).toLocaleString()}\n` +
-      `*Market Cap:* $${Math.round(pair.marketCap).toLocaleString()}\n\n` +
-      `*24h Volume:* $${Math.round(pair.volume.h24).toLocaleString()}\n` +
-      `*24h Trades:* ${pair.txns.h24.buys + pair.txns.h24.sells}\n` +
-      `*Contract:* \`${contractAddress}\`\n\n` +
-      `[View Chart 📊](${pair.url})`;
+      // check flow
+      const flow_response = await fetch(
+        `https://api.geckoterminal.com/api/v2/networks/flow-evm/tokens/${contractAddress}/pools`,
+      );
+      const flow_data = await flow_response.json();
+      const pair =
+        flow_data.data && flow_data.data.length > 0 ? flow_data.data[0] : null;
+      if (!pair) {
+        // check bitkub
+        const bitkub_response = await fetch(
+          `https://api.geckoterminal.com/api/v2/networks/bitkub_chain/tokens/${contractAddress}/pools`,
+        );
+        const bitkub_data = await bitkub_response.json();
+        const pair =
+          bitkub_data.data && bitkub_data.data.length > 0
+            ? bitkub_data.data[0]
+            : null;
+        if (!pair) {
+          return;
+        } else {
+          tokenMessage =
+            `*${pair.attributes.name}* 🎯\n\n` +
+            `*Price:* $${parseFloat(pair.attributes.token_price_usd).toFixed(
+              4,
+            )}\n` +
+            `*24h Change:* ${pair.attributes.price_change_percentage.h24}%\n\n` +
+            `*Liquidity:* $${Math.round(
+              pair.attributes.reserve_in_usd,
+            ).toLocaleString()}\n` +
+            `*Market Cap:* $${Math.round(
+              pair.attributes.fdv_usd,
+            ).toLocaleString()}\n\n` +
+            `*24h Volume:* $${Math.round(
+              pair.attributes.volume_usd.h24,
+            ).toLocaleString()}\n` +
+            `*24h Trades:* ${
+              pair.attributes.transactions.h24.buys +
+              pair.attributes.transactions.h24.sells
+            }\n` +
+            `*Contract:* \`${contractAddress}\`\n\n` +
+            `[View Chart 📊](https://www.geckoterminal.com/bitkub_chain/pools/${pair.attributes.address})`;
+          chainId = 96;
+        }
+      } else {
+        tokenMessage =
+          `*${pair.attributes.name}* 🎯\n\n` +
+          `*Price:* $${parseFloat(pair.attributes.token_price_usd).toFixed(
+            4,
+          )}\n` +
+          `*24h Change:* ${pair.attributes.price_change_percentage.h24}%\n\n` +
+          `*Liquidity:* $${Math.round(
+            pair.attributes.reserve_in_usd,
+          ).toLocaleString()}\n` +
+          `*Market Cap:* $${Math.round(
+            pair.attributes.fdv_usd,
+          ).toLocaleString()}\n\n` +
+          `*24h Volume:* $${Math.round(
+            pair.attributes.volume_usd.h24,
+          ).toLocaleString()}\n` +
+          `*24h Trades:* ${
+            pair.attributes.transactions.h24.buys +
+            pair.attributes.transactions.h24.sells
+          }\n` +
+          `*Contract:* \`${contractAddress}\`\n\n` +
+          `[View Chart 📊](https://www.geckoterminal.com/flow-evm/pools/${pair.attributes.address})`;
+        chainId = 747;
+      }
+    } else {
+      tokenMessage =
+        `*${pair.baseToken.name} (${pair.baseToken.symbol})* 🎯\n\n` +
+        `*Price:* $${parseFloat(pair.priceUsd).toFixed(4)}\n` +
+        `*24h Change:* ${pair.priceChange.h24}%\n\n` +
+        `*Liquidity:* $${Math.round(pair.liquidity.usd).toLocaleString()}\n` +
+        `*Market Cap:* $${Math.round(pair.marketCap).toLocaleString()}\n\n` +
+        `*24h Volume:* $${Math.round(pair.volume.h24).toLocaleString()}\n` +
+        `*24h Trades:* ${pair.txns.h24.buys + pair.txns.h24.sells}\n` +
+        `*Contract:* \`${contractAddress}\`\n\n` +
+        `[View Chart 📊](${pair.url})`;
 
-    const chainId = this.getChainId(pair.chainId);
+      chainId = this.getChainId(pair.chainId);
+    }
 
     const actionKeyboard = Markup.inlineKeyboard([
       this.createBuyButtons(contractAddress, chainId),
