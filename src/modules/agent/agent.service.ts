@@ -24,6 +24,7 @@ export class AgentService {
               role: 'system',
               content: `You are an expert in memecoin trading, you will be given a data of a memecoin token
             Please give me your analytical thoughts on the token. Make it less than 3 sentences. Answer in a mood of a crypto degen bro but still insightful.
+            Also be honest, it should give direction like buy or not buy.
             `,
             },
             { role: 'user', content: prompt },
