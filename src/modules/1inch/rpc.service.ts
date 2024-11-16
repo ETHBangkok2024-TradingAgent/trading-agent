@@ -11,7 +11,7 @@ export class RpcService {
     this.apiKey = this.configService.get<string>('1inch.apiKey');
   }
 
-  async getEtherBalance(address: string, chainId: number) {
+  async getEtherBalance(address: string, chainId: number = 8453) {
     const url = `https://api.1inch.dev/web3/${chainId}/full`;
     const provider = new ethers.providers.JsonRpcProvider({
       url,

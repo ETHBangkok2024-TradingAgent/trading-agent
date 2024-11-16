@@ -14,7 +14,7 @@ export class TokenService {
     this.apiKey = this.configService.get<string>('1inch.apiKey');
   }
 
-  async getTokenInfo(addresses: string[], chainId: number) {
+  async getTokenInfo(addresses: string[], chainId: number = 8453) {
     const url = `https://api.1inch.dev/token/v1.2/${chainId}/custom/${addresses.join(
       ',',
     )}`;

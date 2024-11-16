@@ -14,7 +14,7 @@ export class PortfolioService {
     this.apiKey = this.configService.get<string>('1inch.apiKey');
   }
 
-  async getCurrentValue(address: string, chainId: number) {
+  async getCurrentValue(address: string, chainId: number = 8453) {
     const url =
       'https://api.1inch.dev/portfolio/portfolio/v4/overview/erc20/current_value';
     const response = await lastValueFrom(
@@ -35,7 +35,7 @@ export class PortfolioService {
     return data;
   }
 
-  async getBalance(address: string, chainId: number) {
+  async getBalance(address: string, chainId: number = 8453) {
     const url = `https://api.1inch.dev/balance/v1.2/${chainId}/balances/${address}`;
     const response = await lastValueFrom(
       this.httpService.get(url, {
