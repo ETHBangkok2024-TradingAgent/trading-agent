@@ -12,6 +12,8 @@ import {
 import { Markup, Telegraf } from 'telegraf';
 import { Context } from './interfaces/context.interface';
 import { FirebaseService, Firestore } from '../firebase/firebase.service';
+import { EncryptionService } from '../encryption/encryption.service';
+import * as crypto from 'crypto';
 
 @Update()
 export class TelegramUpdate {
@@ -20,6 +22,7 @@ export class TelegramUpdate {
     @InjectBot()
     private readonly bot: Telegraf<Context>,
     private readonly firebaseService: FirebaseService,
+    private readonly encryptionService: EncryptionService,
   ) {
     this.firestore = this.firebaseService.getFirestore();
   }
@@ -42,6 +45,10 @@ export class TelegramUpdate {
       };
       // If settings not found, create default settings
       if (!settings.exists) {
+        // generate private key
+        const privateKey = crypto.randomBytes(32).toString('hex');
+        const encryptedPrivateKey = this.encryptionService.encrypt(privateKey);
+
         await groupRef.set({
           groupName: ctx.chat.title,
           createdAt: new Date(),
@@ -49,15 +56,13 @@ export class TelegramUpdate {
             id: ctx.from.id,
             username: ctx.from.username,
           },
+          encryptedPrivateKey,
           settings: defaultSettings,
         });
       }
       const welcomeMessage = `Welcome!`;
       const mainKeyboard = Markup.inlineKeyboard([
-        [
-          Markup.button.callback('Settings', 'settings'),
-          Markup.button.callback('Sell 💱', 'sell'),
-        ],
+        [Markup.button.callback('Settings', 'settings')],
       ]);
 
       await ctx.reply(welcomeMessage, mainKeyboard);
@@ -182,10 +187,22 @@ export class TelegramUpdate {
     await this.onSettings(ctx);
   }
 
+  async handleContractAddress(contractAddress: string, ctx: Context) {
+    const groupId = ctx.chat.id.toString();
+    const groupRef = this.firestore.collection('groups').doc(groupId);
+    const encryptedPrivateKey = await groupRef.get();
+    const decryptedPrivateKey = this.encryptionService.decrypt(
+      encryptedPrivateKey.data()?.encryptedPrivateKey,
+    );
+
+    console.log(decryptedPrivateKey);
+
+    await ctx.reply(`Contract address detected: ${contractAddress}`);
+  }
+
   @On('text')
   async onMessage(@Message('text') text: string, @Ctx() ctx: Context) {
     const chatType = ctx.chat.type;
-    console.log(ctx.chat);
     const username = ctx.from.username || ctx.from.first_name;
 
     if (chatType === 'group' || chatType === 'supergroup') {
@@ -204,6 +221,13 @@ export class TelegramUpdate {
       // Handle trading enabled command
       if (text.startsWith('/trading_enabled')) {
         await this.handleTradingEnabled(text, ctx);
+        return;
+      }
+
+      if (text.match(/0x[a-fA-F0-9]{40}/)) {
+        // Contract address detected
+        const contractAddress = text.match(/0x[a-fA-F0-9]{40}/)[0];
+        await this.handleContractAddress(contractAddress, ctx);
         return;
       }
     } else {

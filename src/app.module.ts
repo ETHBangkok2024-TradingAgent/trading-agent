@@ -5,6 +5,7 @@ import { TelegrafModule } from 'nestjs-telegraf';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import telegramConfig from './configs/telegram.config';
 import { TelegramModule } from './modules/telegram/telegram.module';
+import { EncryptionService } from './modules/encryption/encryption.service';
 
 @Module({
   imports: [
@@ -23,6 +24,6 @@ import { TelegramModule } from './modules/telegram/telegram.module';
     TelegramModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, EncryptionService],
 })
 export class AppModule {}
