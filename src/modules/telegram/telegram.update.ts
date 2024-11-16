@@ -655,9 +655,18 @@ export class TelegramUpdate {
     const data = await groupRef.get();
     const gangAddress = data.data()?.address;
 
+    // Check if txHash already exists in deposit_logs
+    const existingLogs = data.data()?.deposit_logs || [];
+    if (existingLogs.some((log) => log.txHash === txHash)) {
+      await ctx.reply('This transaction has already been processed.');
+      return;
+    }
+
     // https://eth.blockscout.com/api/v2/transactions/0xb0fa3310e59215faa8828c6518ba8d784c6d21c246dd2ea104a3685253e23131
+
     let txData = null;
     let chainString = '';
+    let txLink = '';
     for (const chain of ['base', 'eth', 'scroll', 'linea', 'polygon']) {
       const response = await fetch(
         `https://${chain}.blockscout.com/api/v2/transactions/${txHash}`,
@@ -668,6 +677,7 @@ export class TelegramUpdate {
       }
       txData = await response.json();
       chainString = chain;
+      txLink = `https://${chain}.blockscout.com/tx/${txHash}`;
       break;
     }
     if (txData && txData.to.hash == gangAddress) {
@@ -687,9 +697,9 @@ export class TelegramUpdate {
       await ctx.reply(
         `*🎉 Deposit Detected!*\n\n` +
           `*Chain:* ${chainString}\n` +
-          `*Transaction:* \`${txHash}\`\n` +
           `*From:* \`${txData.from.hash}\`\n` +
-          `*Amount:* ${(Number(txData.value) / 1e18).toFixed(4)} ETH\n\n`,
+          `*Amount:* ${(Number(txData.value) / 1e18).toFixed(4)} ETH\n\n` +
+          `*Transaction:* \`${txLink}\`\n`,
         {
           parse_mode: 'Markdown',
           ...Markup.inlineKeyboard([
