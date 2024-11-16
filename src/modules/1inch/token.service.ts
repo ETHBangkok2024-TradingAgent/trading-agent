@@ -28,4 +28,21 @@ export class TokenService {
     const data = response.data;
     return data;
   }
+
+  async getPrice(addresses: string[], chainId: number) {
+    const url = `https://api.1inch.dev/price/v1.1/${chainId}`;
+    const body = {
+      tokens: addresses,
+      currency: 'USD',
+    };
+    const response = await lastValueFrom(
+      this.httpService.post(url, body, {
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+      }),
+    );
+    const data = response.data;
+    return data;
+  }
 }
