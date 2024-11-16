@@ -221,106 +221,106 @@ export class TelegramUpdate {
     const response = await this.portfolioService.getBalance(address, 1);
     console.log(response);
 
-    // // TEMP
-    // const positions = [
-    //   {
-    //     user: 'Alice',
-    //     totalBalance: 2,
-    //     ethBalance: 0.5,
-    //     baseBalance: 1.5,
-    //     scrollBalance: 0.5,
-    //     tokens: [
-    //       {
-    //         name: 'Pepe Token',
-    //         symbol: 'PEPE',
-    //         contractAddress: '0x6982508145454ce325ddbe47a25d4ec3d2311933',
-    //         amount: 1000000,
-    //         amountUSD: 5000,
-    //         price: 0.000005,
-    //         marketCap: 5000000,
-    //         avgEntry: 0.000004,
-    //         pnlUSD: 1000,
-    //         pnlPercentage: 25,
-    //       },
-    //       {
-    //         name: 'Doge Token',
-    //         symbol: 'DOGE',
-    //         contractAddress: '0x1234567890123456789012345678901234567890',
-    //         amount: 50000,
-    //         amountUSD: 3000,
-    //         price: 0.06,
-    //         marketCap: 8000000,
-    //         avgEntry: 0.05,
-    //         pnlUSD: 500,
-    //         pnlPercentage: 20,
-    //       },
-    //     ],
-    //   },
-    //   {
-    //     user: 'Bob',
-    //     totalBalance: 2,
-    //     ethBalance: 0.5,
-    //     baseBalance: 1.5,
-    //     scrollBalance: 0.5,
-    //     tokens: [
-    //       {
-    //         name: 'Moon Coin',
-    //         symbol: 'MOON',
-    //         contractAddress: '0x9876543210987654321098765432109876543210',
-    //         amount: 75000,
-    //         amountUSD: 7500,
-    //         price: 0.1,
-    //         marketCap: 10000000,
-    //         avgEntry: 0.08,
-    //         pnlUSD: 1500,
-    //         pnlPercentage: 30,
-    //       },
-    //     ],
-    //   },
-    // ];
-    // const message =
-    //   `*📊 Current Balance*\n\n` +
-    //   positions
-    //     .map(
-    //       (position) =>
-    //         `👤 *${position.user}*\n` +
-    //         `💰 Total Balance: $${position.totalBalance.toFixed(4)}\n` +
-    //         `⚡ ETH Balance: ${position.ethBalance.toFixed(4)} ETH\n` +
-    //         `🔵 Base Balance: ${position.baseBalance.toFixed(4)} ETH\n` +
-    //         `📜 Scroll Balance: ${position.scrollBalance.toFixed(4)} ETH\n`,
-    //     )
-    //     .join('\n') +
-    //   `\n*🎯 Active Positions*\n\n` +
-    //   positions
-    //     .map((position) =>
-    //       position.tokens
-    //         .map(
-    //           (token) =>
-    //             `👤 *${position.user}'s Position*\n` +
-    //             `*${token.name}* (${token.symbol})\n` +
-    //             `📍 \`${token.contractAddress}\`\n` +
-    //             `💎 Holdings: ${token.amount.toFixed(4)} ${
-    //               token.symbol
-    //             } ($${token.amountUSD.toLocaleString()})\n` +
-    //             `💵 Price: $${token.price.toFixed(
-    //               6,
-    //             )} | MC: $${token.marketCap.toLocaleString()}\n` +
-    //             `📈 Avg Entry: $${token.avgEntry.toFixed(6)}\n` +
-    //             `💫 PNL: $${token.pnlUSD.toLocaleString()} (${token.pnlPercentage.toFixed(
-    //               2,
-    //             )}%)\n`,
-    //         )
-    //         .join('\n\n'),
-    //     )
-    //     .join('\n\n');
+    // TEMP
+    const positions = [
+      {
+        user: 'Alice',
+        totalBalance: 2,
+        ethBalance: 0.5,
+        baseBalance: 1.5,
+        scrollBalance: 0.5,
+        tokens: [
+          {
+            name: 'Pepe Token',
+            symbol: 'PEPE',
+            contractAddress: '0x6982508145454ce325ddbe47a25d4ec3d2311933',
+            amount: 1000000,
+            amountUSD: 5000,
+            price: 0.000005,
+            marketCap: 5000000,
+            avgEntry: 0.000004,
+            pnlUSD: 1000,
+            pnlPercentage: 25,
+          },
+          {
+            name: 'Doge Token',
+            symbol: 'DOGE',
+            contractAddress: '0x1234567890123456789012345678901234567890',
+            amount: 50000,
+            amountUSD: 3000,
+            price: 0.06,
+            marketCap: 8000000,
+            avgEntry: 0.05,
+            pnlUSD: 500,
+            pnlPercentage: 20,
+          },
+        ],
+      },
+      {
+        user: 'Bob',
+        totalBalance: 2,
+        ethBalance: 0.5,
+        baseBalance: 1.5,
+        scrollBalance: 0.5,
+        tokens: [
+          {
+            name: 'Moon Coin',
+            symbol: 'MOON',
+            contractAddress: '0x9876543210987654321098765432109876543210',
+            amount: 75000,
+            amountUSD: 7500,
+            price: 0.1,
+            marketCap: 10000000,
+            avgEntry: 0.08,
+            pnlUSD: 1500,
+            pnlPercentage: 30,
+          },
+        ],
+      },
+    ];
+    const message =
+      `*📊 Current Balance*\n\n` +
+      positions
+        .map(
+          (position) =>
+            `👤 *${position.user}*\n` +
+            `💰 Total Balance: $${position.totalBalance.toFixed(4)}\n` +
+            `⚡ ETH Balance: ${position.ethBalance.toFixed(4)} ETH\n` +
+            `🔵 Base Balance: ${position.baseBalance.toFixed(4)} ETH\n` +
+            `📜 Scroll Balance: ${position.scrollBalance.toFixed(4)} ETH\n`,
+        )
+        .join('\n') +
+      `\n*🎯 Active Positions*\n\n` +
+      positions
+        .map((position) =>
+          position.tokens
+            .map(
+              (token) =>
+                `👤 *${position.user}'s Position*\n` +
+                `*${token.name}* (${token.symbol})\n` +
+                `📍 \`${token.contractAddress}\`\n` +
+                `💎 Holdings: ${token.amount.toFixed(4)} ${
+                  token.symbol
+                } ($${token.amountUSD.toLocaleString()})\n` +
+                `💵 Price: $${token.price.toFixed(
+                  6,
+                )} | MC: $${token.marketCap.toLocaleString()}\n` +
+                `📈 Avg Entry: $${token.avgEntry.toFixed(6)}\n` +
+                `💫 PNL: $${token.pnlUSD.toLocaleString()} (${token.pnlPercentage.toFixed(
+                  2,
+                )}%)\n`,
+            )
+            .join('\n\n'),
+        )
+        .join('\n\n');
 
-    // await ctx.reply(message, {
-    //   parse_mode: 'Markdown',
-    //   ...Markup.inlineKeyboard([
-    //     [Markup.button.callback('🔄 Refresh', 'refresh_positions')],
-    //     [Markup.button.callback('🏠 Home', 'start')],
-    //   ]),
-    // });
+    await ctx.reply(message, {
+      parse_mode: 'Markdown',
+      ...Markup.inlineKeyboard([
+        [Markup.button.callback('🔄 Refresh', 'refresh_positions')],
+        [Markup.button.callback('🏠 Home', 'start')],
+      ]),
+    });
   }
 
   @Action('change_slippage')

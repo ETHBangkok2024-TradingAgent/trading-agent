@@ -8,6 +8,7 @@ import { TelegramModule } from './modules/telegram/telegram.module';
 import { EncryptionService } from './modules/encryption/encryption.service';
 import { OneInchModule } from './modules/1inch/oneinch.module';
 import OneInchConfig from './configs/oneinch.config';
+import { PositionModule } from './modules/position/position.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import OneInchConfig from './configs/oneinch.config';
     }),
     TelegramModule,
     OneInchModule,
+    PositionModule,
   ],
   controllers: [AppController],
   providers: [AppService, EncryptionService],
