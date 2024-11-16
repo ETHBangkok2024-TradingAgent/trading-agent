@@ -17,6 +17,8 @@ import * as crypto from 'crypto';
 import { PortfolioService } from '../1inch/portfolio.service';
 import { TokenService } from '../1inch/token.service';
 import { Wallet } from 'ethers';
+import { Positions } from './decorators/positions.decorator';
+import { RpcService } from '../1inch/rpc.service';
 
 @Update()
 export class TelegramUpdate {
@@ -28,11 +30,34 @@ export class TelegramUpdate {
     private readonly encryptionService: EncryptionService,
     private readonly portfolioService: PortfolioService,
     private readonly tokenService: TokenService,
+    private readonly rpcService: RpcService,
   ) {
     this.firestore = this.firebaseService.getFirestore();
   }
 
+  private createBuyButtons(
+    contractAddress: string,
+    chainId: number,
+    amounts: number[] = [0.1, 0.2, 0.5],
+  ) {
+    return amounts.map((amount) =>
+      Markup.button.callback(
+        `🛒 Buy ${amount} ETH`,
+        `buy_${contractAddress}_${chainId}_${amount}`,
+      ),
+    );
+  }
+
+  private getChainId(chainIdString: string) {
+    let chainId = 1;
+    if (chainIdString.toLowerCase() === 'base') {
+      chainId = 8453;
+    }
+    return chainId;
+  }
+
   @Start()
+  @Action('start')
   async onStart(ctx: Context) {
     const isGroup = ctx.chat.type === 'group' || ctx.chat.type === 'supergroup';
     if (!isGroup) {
@@ -70,23 +95,43 @@ export class TelegramUpdate {
         });
       }
 
-      const scrollBalance = '0';
-      const baseBalance = '0';
+      const baseBalance = await this.rpcService.getEtherBalance(address, 8453);
+      const ethBalance = await this.rpcService.getEtherBalance(address, 1);
+      // const scrollBalance = await this.rpcService.getEtherBalance(
+      //   address,
+      //   534352,
+      // );
+      // const polygonBalance = await this.rpcService.getEtherBalance(
+      //   address,
+      //   137,
+      // );
+      // const lineaBalance = await this.rpcService.getEtherBalance(
+      //   address,
+      //   59144,
+      // );
+      const scrollBalance = 0;
+      const polygonBalance = 0;
+      const lineaBalance = 0;
 
       const welcomeMessage =
         `*Welcome to Moon Gang* 🚀\n\n` +
-        `*Start Depositing:*\n\n` +
-        `*Scroll* 📜\n` +
-        `\`${address}\`\n` +
-        `Balance: ${scrollBalance} ETH ($0.00)\n\n` +
+        `*Start Depositing:*\n` +
+        `\`${address}\`\n\n` +
+        `*Ethereum* 🦇\n` +
+        `Balance: ${ethBalance} ETH ($0.00)\n\n` +
         `*Base* 🔷\n` +
-        `\`${address}\`\n` +
-        `Balance: ${baseBalance} ETH ($0.00)`;
+        `Balance: ${baseBalance} ETH ($0.00)\n\n` +
+        `*Scroll* 📜\n` +
+        `Balance: ${scrollBalance} ETH ($0.00)\n\n` +
+        `*Polygon* 🟣\n` +
+        `Balance: ${polygonBalance} ETH ($0.00)\n\n` +
+        `*Linea* 🖥️\n` +
+        `Balance: ${lineaBalance} ETH ($0.00)\n\n`;
 
       const mainKeyboard = Markup.inlineKeyboard([
         [Markup.button.callback('🔄 Refresh', 'refresh_balance')],
         [
-          Markup.button.callback('📊 Position', 'positions'),
+          Markup.button.callback('📊 Positions', 'positions'),
           Markup.button.callback('📤 Settings', 'settings'),
         ],
       ]);
@@ -100,6 +145,23 @@ export class TelegramUpdate {
 
   @Action('refresh_balance')
   async onRefreshBalance(ctx: Context) {
+    try {
+      // Delete the previous message
+      await ctx.deleteMessage();
+
+      // Show loading state to user
+      await ctx.answerCbQuery('Refreshing balances...');
+
+      // Call onStart to show the fresh data
+      await this.onStart(ctx);
+    } catch (error) {
+      console.error('Error refreshing balance:', error);
+      await ctx.answerCbQuery('Error refreshing balances. Please try again.');
+    }
+  }
+
+  @Action('refresh_positions')
+  async onRefreshPositions(ctx: Context) {
     try {
       // Delete the previous message
       await ctx.deleteMessage();
@@ -146,15 +208,119 @@ export class TelegramUpdate {
   }
 
   @Action('positions')
+  @Positions()
   async onPositions(ctx: Context) {
     const groupId = ctx.chat.id.toString();
     const groupRef = this.firestore.collection('groups').doc(groupId);
     const data = await groupRef.get();
     // const address = data.data()?.address;
-    const address = '0x0000000000000000000000000000000000000000';
-    // TEMP
-    const positions = await this.portfolioService.getBalance(address);
-    console.log(positions);
+    const tokens = data.data()?.related_tokens || [];
+
+    const address = '0x58ffd1447e30ede4f53f9ebbc7e8c93861c59e62';
+
+    const response = await this.portfolioService.getBalance(address, 1);
+    console.log(response);
+
+    // // TEMP
+    // const positions = [
+    //   {
+    //     user: 'Alice',
+    //     totalBalance: 2,
+    //     ethBalance: 0.5,
+    //     baseBalance: 1.5,
+    //     scrollBalance: 0.5,
+    //     tokens: [
+    //       {
+    //         name: 'Pepe Token',
+    //         symbol: 'PEPE',
+    //         contractAddress: '0x6982508145454ce325ddbe47a25d4ec3d2311933',
+    //         amount: 1000000,
+    //         amountUSD: 5000,
+    //         price: 0.000005,
+    //         marketCap: 5000000,
+    //         avgEntry: 0.000004,
+    //         pnlUSD: 1000,
+    //         pnlPercentage: 25,
+    //       },
+    //       {
+    //         name: 'Doge Token',
+    //         symbol: 'DOGE',
+    //         contractAddress: '0x1234567890123456789012345678901234567890',
+    //         amount: 50000,
+    //         amountUSD: 3000,
+    //         price: 0.06,
+    //         marketCap: 8000000,
+    //         avgEntry: 0.05,
+    //         pnlUSD: 500,
+    //         pnlPercentage: 20,
+    //       },
+    //     ],
+    //   },
+    //   {
+    //     user: 'Bob',
+    //     totalBalance: 2,
+    //     ethBalance: 0.5,
+    //     baseBalance: 1.5,
+    //     scrollBalance: 0.5,
+    //     tokens: [
+    //       {
+    //         name: 'Moon Coin',
+    //         symbol: 'MOON',
+    //         contractAddress: '0x9876543210987654321098765432109876543210',
+    //         amount: 75000,
+    //         amountUSD: 7500,
+    //         price: 0.1,
+    //         marketCap: 10000000,
+    //         avgEntry: 0.08,
+    //         pnlUSD: 1500,
+    //         pnlPercentage: 30,
+    //       },
+    //     ],
+    //   },
+    // ];
+    // const message =
+    //   `*📊 Current Balance*\n\n` +
+    //   positions
+    //     .map(
+    //       (position) =>
+    //         `👤 *${position.user}*\n` +
+    //         `💰 Total Balance: $${position.totalBalance.toFixed(4)}\n` +
+    //         `⚡ ETH Balance: ${position.ethBalance.toFixed(4)} ETH\n` +
+    //         `🔵 Base Balance: ${position.baseBalance.toFixed(4)} ETH\n` +
+    //         `📜 Scroll Balance: ${position.scrollBalance.toFixed(4)} ETH\n`,
+    //     )
+    //     .join('\n') +
+    //   `\n*🎯 Active Positions*\n\n` +
+    //   positions
+    //     .map((position) =>
+    //       position.tokens
+    //         .map(
+    //           (token) =>
+    //             `👤 *${position.user}'s Position*\n` +
+    //             `*${token.name}* (${token.symbol})\n` +
+    //             `📍 \`${token.contractAddress}\`\n` +
+    //             `💎 Holdings: ${token.amount.toFixed(4)} ${
+    //               token.symbol
+    //             } ($${token.amountUSD.toLocaleString()})\n` +
+    //             `💵 Price: $${token.price.toFixed(
+    //               6,
+    //             )} | MC: $${token.marketCap.toLocaleString()}\n` +
+    //             `📈 Avg Entry: $${token.avgEntry.toFixed(6)}\n` +
+    //             `💫 PNL: $${token.pnlUSD.toLocaleString()} (${token.pnlPercentage.toFixed(
+    //               2,
+    //             )}%)\n`,
+    //         )
+    //         .join('\n\n'),
+    //     )
+    //     .join('\n\n');
+
+    // await ctx.reply(message, {
+    //   parse_mode: 'Markdown',
+    //   ...Markup.inlineKeyboard([
+    //     [Markup.button.callback('🔄 Refresh', 'refresh_positions')],
+    //     [Markup.button.callback('🏠 Home', 'start')],
+    //   ]),
+    // });
   }
 
   @Action('change_slippage')
@@ -246,23 +412,23 @@ export class TelegramUpdate {
   }
 
   async handleContractAddress(contractAddress: string, ctx: Context) {
-    // handle Buy
-    const groupId = ctx.chat.id.toString();
-    const groupRef = this.firestore.collection('groups').doc(groupId);
-    const encryptedPrivateKey = await groupRef.get();
-    const decryptedPrivateKey = this.encryptionService.decrypt(
-      encryptedPrivateKey.data()?.encryptedPrivateKey,
-    );
-    console.log(decryptedPrivateKey);
+    // // handle Buy
+    // const groupId = ctx.chat.id.toString();
+    // const groupRef = this.firestore.collection('groups').doc(groupId);
+    // const encryptedPrivateKey = await groupRef.get();
+    // const decryptedPrivateKey = this.encryptionService.decrypt(
+    //   encryptedPrivateKey.data()?.encryptedPrivateKey,
+    // );
+    // console.log(decryptedPrivateKey);
 
-    // save calls to firestore
-    const username = ctx.from.username || ctx.from.first_name;
-    const callRef = this.firestore.collection('calls').doc();
-    await callRef.set({
-      contractAddress,
-      createdBy: username,
-      createdAt: new Date(),
-    });
+    // // save calls to firestore
+    // const username = ctx.from.username || ctx.from.first_name;
+    // const callRef = this.firestore.collection('calls').doc();
+    // await callRef.set({
+    //   contractAddress,
+    //   createdBy: username,
+    //   createdAt: new Date(),
+    // });
 
     // save holding to firestore
 
@@ -271,7 +437,10 @@ export class TelegramUpdate {
       `https://api.dexscreener.com/latest/dex/tokens/${contractAddress}`,
     );
     const data = await response.json();
-    const pair = data.pairs[0];
+    const pair = data.pairs[0] || null;
+    if (!pair) {
+      return;
+    }
     const tokenMessage =
       `*${pair.baseToken.name} (${pair.baseToken.symbol})* 🎯\n\n` +
       `*Price:* $${parseFloat(pair.priceUsd).toFixed(4)}\n` +
@@ -283,12 +452,10 @@ export class TelegramUpdate {
       `*Contract:* \`${contractAddress}\`\n\n` +
       `[View Chart 📊](${pair.url})`;
 
+    const chainId = this.getChainId(pair.chainId);
+
     const actionKeyboard = Markup.inlineKeyboard([
-      [
-        Markup.button.callback('🛒 Buy 0.1 ETH', `buy_${contractAddress}_0.1`),
-        Markup.button.callback('🛒 Buy 0.2 ETH', `buy_${contractAddress}_0.2`),
-        Markup.button.callback('🛒 Buy 0.5 ETH', `buy_${contractAddress}_0.5`),
-      ],
+      this.createBuyButtons(contractAddress, chainId),
       [Markup.button.callback('🔄 Refresh', `refresh_${contractAddress}`)],
     ]);
 
@@ -296,6 +463,41 @@ export class TelegramUpdate {
       parse_mode: 'Markdown',
       ...actionKeyboard,
     });
+  }
+
+  @Action(/^buy_0x[a-fA-F0-9]{40}_[0-9]+_[0-9.]+$/)
+  async onBuyToken(ctx: Context & { callbackQuery: { data: string } }) {
+    try {
+      const [_, contractAddress, chainId, amount] =
+        ctx.callbackQuery.data.split('_');
+      const buyAmount = parseFloat(amount);
+
+      // Show loading state
+      await ctx.answerCbQuery(`Processing buy order for ${buyAmount} ETH...`);
+
+      // TODO: Implement your buy logic here using contractAddress, chainId, and buyAmount
+      // await this.portfolioService.buyToken(contractAddress, chainId, buyAmount);
+
+      const groupId = ctx.chat.id.toString();
+      const groupRef = this.firestore.collection('groups').doc(groupId);
+      const data = await groupRef.get();
+      await groupRef.update({
+        related_tokens: [
+          ...(data.data()?.related_tokens || []),
+          { contractAddress, chainId },
+        ],
+      });
+
+      await ctx.reply(
+        `Buy order placed for ${buyAmount} ETH of ${contractAddress}`,
+        Markup.inlineKeyboard([
+          [Markup.button.callback('📊 Position', 'positions')],
+        ]),
+      );
+    } catch (error) {
+      console.error('Error processing buy:', error);
+      await ctx.answerCbQuery('Error processing buy order. Please try again.');
+    }
   }
 
   @Action(/^refresh_0x[a-fA-F0-9]{40}$/)

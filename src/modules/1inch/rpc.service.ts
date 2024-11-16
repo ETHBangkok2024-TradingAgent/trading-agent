@@ -12,7 +12,13 @@ export class RpcService {
   }
 
   async getEtherBalance(address: string, chainId: number = 8453) {
-    const url = `https://api.1inch.dev/web3/${chainId}/full`;
+    let url = `https://api.1inch.dev/web3/${chainId}/full`;
+    if (chainId === 534352) {
+      url = `https://rpc.scroll.io`;
+    }
+    if (chainId === 59144) {
+      url = `https://linea.drpc.org`;
+    }
     const provider = new ethers.providers.JsonRpcProvider({
       url,
       headers: {
