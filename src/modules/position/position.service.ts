@@ -4,6 +4,7 @@ import { EncryptionService } from '../encryption/encryption.service';
 import { SwapService } from '../1inch/swap.service';
 import { RpcService } from '../1inch/rpc.service';
 import { ethers } from 'ethers';
+import { Interface } from 'ethers/lib/utils';
 
 @Injectable()
 export class PositionService {
@@ -41,26 +42,38 @@ export class PositionService {
     const { transactionHash, blockNumber } = receipt;
     console.log(receipt);
     // calculate amount out from receipt
-
+    const iface = new Interface([
+      'event Transfer(address indexed from, address indexed to, uint256 value)',
+    ]);
+    let amountOut = '0';
+    receipt.logs.forEach((log) => {
+      if (log.address == tokenAddress) {
+        const event = iface.decodeEventLog('Transfer', log.data, log.topics);
+        console.log(event);
+        if (event.to == address) {
+          amountOut = event.value.toString();
+        }
+      }
+    });
     // save swap to firestore
     const swap = {
-      user: '',
-      userName: '',
-      group: '',
+      user,
+      group,
       side: 'buy',
-      chainId: 1,
-      tokenAddress: '0xffff',
-      symbol: '',
-      amount: '0.1',
-      slippage: 0.1,
-      amountOut: '0.2',
-      transactionHash: '',
-      blockNumber: 0,
-      price: '0.3',
+      chainId,
+      tokenAddress,
+      amount,
+      slippage,
+      amountOut,
+      transactionHash,
+      blockNumber,
     };
     const swapRef = this.firestore.collection('swaps').doc();
-    await swapRef.set(swap);
+    const result = await swapRef.set(swap);
+    console.log(result);
     // save position to firestore
+    // const positionId = `${group}_${user}`;
+    // const positionRef = this.firestore.collection('positions').doc();
     return { transactionHash, blockNumber };
   }
 }
