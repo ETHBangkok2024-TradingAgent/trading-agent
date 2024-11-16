@@ -1,4 +1,12 @@
-import { Help, InjectBot, Message, On, Start, Update } from 'nestjs-telegraf';
+import {
+  Ctx,
+  Help,
+  InjectBot,
+  Message,
+  On,
+  Start,
+  Update,
+} from 'nestjs-telegraf';
 import { Telegraf } from 'telegraf';
 import { Context } from './interfaces/context.interface';
 
@@ -21,8 +29,10 @@ export class TelegramUpdate {
   }
 
   @On('text')
-  onMessage(@Message('text') text: string) {
+  async onMessage(@Message('text') text: string, @Ctx() ctx: Context) {
     // receive text from bot
+    const chatId = ctx.chat.id;
     console.log(text);
+    await this.bot.telegram.sendMessage(chatId, 'hello welcome, have room');
   }
 }
