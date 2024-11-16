@@ -35,8 +35,8 @@ export class PortfolioService {
     return data;
   }
 
-  async getBalance(address: string) {
-    const url = `https://api.1inch.dev/balance/v1.2/1/balances/${address}`;
+  async getBalance(address: string, chainId: number) {
+    const url = `https://api.1inch.dev/balance/v1.2/${chainId}/balances/${address}`;
     const response = await lastValueFrom(
       this.httpService.get(url, {
         headers: {
