@@ -24,6 +24,9 @@ export class RpcService {
     if (chainId === 59144) {
       url = `https://linea.drpc.org`;
     }
+    if (chainId === 747) {
+      url = `https://mainnet.evm.nodes.onflow.org`;
+    }
     const provider = new ethers.providers.JsonRpcProvider({
       url,
       headers: {

@@ -133,14 +133,17 @@ export class TelegramUpdate {
       const scrollBalance = 0;
       const polygonBalance = 0;
       const lineaBalance = 0;
+      const flowBalance = await this.rpcService.getEtherBalance(address, 747);
 
       const ethUsdPrice = 3000;
+      const flowUsdPrice = 0.66;
       const usdBalances = {
         eth: Number(ethBalance) * ethUsdPrice,
         base: Number(baseBalance) * ethUsdPrice,
         scroll: Number(scrollBalance) * ethUsdPrice,
         polygon: Number(polygonBalance) * ethUsdPrice,
         linea: Number(lineaBalance) * ethUsdPrice,
+        flow: Number(flowBalance) * flowUsdPrice,
       };
 
       const welcomeMessage =
@@ -160,7 +163,9 @@ export class TelegramUpdate {
           2,
         )})\n\n` +
         `*Linea* 🖥️\n` +
-        `Balance: ${lineaBalance} ETH ($${usdBalances.linea.toFixed(2)})\n\n`;
+        `Balance: ${lineaBalance} ETH ($${usdBalances.linea.toFixed(2)})\n\n` +
+        `*Flow* 💚\n` +
+        `Balance: ${flowBalance} FLOW ($${usdBalances.flow.toFixed(2)})\n\n`;
 
       const mainKeyboard = Markup.inlineKeyboard([
         [Markup.button.callback('🔄 Refresh', 'refresh_balance')],
@@ -667,7 +672,14 @@ export class TelegramUpdate {
     let txData = null;
     let chainString = '';
     let txLink = '';
-    for (const chain of ['base', 'eth', 'scroll', 'linea', 'polygon']) {
+    for (const chain of [
+      'base',
+      'eth',
+      'flow-evm',
+      'scroll',
+      'linea',
+      'polygon',
+    ]) {
       const response = await fetch(
         `https://${chain}.blockscout.com/api/v2/transactions/${txHash}`,
       );
