@@ -6,11 +6,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import telegramConfig from './configs/telegram.config';
 import { TelegramModule } from './modules/telegram/telegram.module';
 import { EncryptionService } from './modules/encryption/encryption.service';
+import { OneInchModule } from './modules/1inch/oneinch.module';
+import OneInchConfig from './configs/oneinch.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      load: [telegramConfig],
+      load: [telegramConfig, OneInchConfig],
       isGlobal: true,
     }),
     TelegrafModule.forRootAsync({
@@ -22,6 +24,7 @@ import { EncryptionService } from './modules/encryption/encryption.service';
       }),
     }),
     TelegramModule,
+    OneInchModule,
   ],
   controllers: [AppController],
   providers: [AppService, EncryptionService],
