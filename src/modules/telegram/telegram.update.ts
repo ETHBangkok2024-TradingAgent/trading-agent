@@ -19,6 +19,7 @@ import { TokenService } from '../1inch/token.service';
 import { Wallet } from 'ethers';
 import { Positions } from './decorators/positions.decorator';
 import { RpcService } from '../1inch/rpc.service';
+import { PositionService } from '../position/position.service';
 
 @Update()
 export class TelegramUpdate {
@@ -31,6 +32,7 @@ export class TelegramUpdate {
     private readonly portfolioService: PortfolioService,
     private readonly tokenService: TokenService,
     private readonly rpcService: RpcService,
+    private readonly positionService: PositionService,
   ) {
     this.firestore = this.firebaseService.getFirestore();
   }
@@ -475,12 +477,28 @@ export class TelegramUpdate {
       // Show loading state
       await ctx.answerCbQuery(`Processing buy order for ${buyAmount} ETH...`);
 
+      const groupId = ctx.chat.id.toString();
+      const userId = ctx.from.id.toString();
+      const username = ctx.from.username || ctx.from.first_name;
+      const groupRef = this.firestore.collection('groups').doc(groupId);
+      const data = await groupRef.get();
+      const slippage = data.data()?.settings?.slippage | 1;
+      const encryptedPrivateKey = data.data()?.encryptedPrivateKey;
+      const decryptedPrivateKey =
+        this.encryptionService.decrypt(encryptedPrivateKey);
+      console.log(decryptedPrivateKey);
+      await this.positionService.buy(
+        groupId,
+        userId,
+        Number(chainId),
+        contractAddress,
+        '0.001',
+        slippage,
+        decryptedPrivateKey,
+      );
       // TODO: Implement your buy logic here using contractAddress, chainId, and buyAmount
       // await this.portfolioService.buyToken(contractAddress, chainId, buyAmount);
 
-      const groupId = ctx.chat.id.toString();
-      const groupRef = this.firestore.collection('groups').doc(groupId);
-      const data = await groupRef.get();
       await groupRef.update({
         related_tokens: [
           ...(data.data()?.related_tokens || []),
