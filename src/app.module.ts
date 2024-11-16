@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { TelegrafModule } from 'nestjs-telegraf';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import telegramConfig from './configs/telegram.config';
+import { TelegramModule } from './modules/telegram/telegram.module';
 
 @Module({
   imports: [
@@ -16,8 +17,10 @@ import telegramConfig from './configs/telegram.config';
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
         token: configService.get<string>('telegram.token'),
+        include: [TelegramModule],
       }),
     }),
+    TelegramModule,
   ],
   controllers: [AppController],
   providers: [AppService],
