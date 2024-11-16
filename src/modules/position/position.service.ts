@@ -3,7 +3,7 @@ import { FirebaseService, Firestore } from '../firebase/firebase.service';
 import { EncryptionService } from '../encryption/encryption.service';
 import { SwapService } from '../1inch/swap.service';
 import { RpcService } from '../1inch/rpc.service';
-import { ethers } from 'ethers';
+import { ethers, utils } from 'ethers';
 import { Interface } from 'ethers/lib/utils';
 
 @Injectable()
@@ -26,6 +26,25 @@ export class PositionService {
     slippage: number,
     privateKey: string,
   ) {
+    console.log(group);
+    // check balance
+    const groupRef = this.firestore.collection('groups').doc(group);
+    const data = await groupRef.get();
+    const positions = data.data()?.positions || [];
+    const positionIndex = positions.findIndex(
+      (pos) => pos.user == Number(user),
+    );
+    console.log(user);
+    console.log(positionIndex);
+    console.log(positions[positionIndex]);
+    let balance = 0;
+    if (chainId === 8453) {
+      balance = positions[positionIndex]?.baseBalance || 0;
+    }
+    console.log(balance);
+    if (balance < Number(amount)) {
+      throw new Error('Insufficient balance');
+    }
     // swap
     const wallet = new ethers.Wallet(privateKey);
     const address = wallet.address;
@@ -48,7 +67,6 @@ export class PositionService {
     receipt.logs.forEach((log) => {
       if (log.address == tokenAddress) {
         const event = iface.decodeEventLog('Transfer', log.data, log.topics);
-        console.log(event);
         if (event.to == address) {
           amountOut = event.value.toString();
         }
@@ -56,25 +74,35 @@ export class PositionService {
     });
     // save swap to firestore
     const swap = {
-      user,
-      group,
+      user: Number(user),
       side: 'buy',
       chainId,
       tokenAddress,
       amount,
       slippage,
-      amountOut,
+      amountOut: utils.formatUnits(amountOut, 18),
       transactionHash,
       blockNumber,
     };
-    const groupRef = this.firestore.collection('groups').doc(group);
-    const data = await groupRef.get();
+    const tokenIndex = positions[positionIndex]?.tokens.findIndex(
+      (token) => token.address === tokenAddress,
+    );
+    if (tokenIndex === -1) {
+      positions[positionIndex].tokens.push({
+        address: tokenAddress,
+        amount: utils.formatUnits(amountOut, 18),
+      });
+    } else {
+      positions[positionIndex].tokens[tokenIndex].amount += utils.formatUnits(
+        amountOut,
+        18,
+      );
+    }
     await groupRef.update({
       swap_logs: [...(data.data()?.swap_logs || []), swap],
+      positions,
     });
     // save position to firestore
-    // const positionId = `${group}_${user}`;
-    // const positionRef = this.firestore.collection('positions').doc();
     return { transactionHash, blockNumber };
   }
 }

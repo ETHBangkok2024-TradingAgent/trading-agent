@@ -595,7 +595,6 @@ export class TelegramUpdate {
 
       const groupId = ctx.chat.id.toString();
       const userId = ctx.from.id.toString();
-      const username = ctx.from.username || ctx.from.first_name;
       const groupRef = this.firestore.collection('groups').doc(groupId);
       const data = await groupRef.get();
       const slippage = data.data()?.settings?.slippage | 1;
@@ -603,7 +602,7 @@ export class TelegramUpdate {
       const decryptedPrivateKey =
         this.encryptionService.decrypt(encryptedPrivateKey);
       console.log(decryptedPrivateKey);
-      await this.positionService.buy(
+      const result = await this.positionService.buy(
         groupId,
         userId,
         Number(chainId),
@@ -623,7 +622,7 @@ export class TelegramUpdate {
       });
 
       await ctx.reply(
-        `Buy order placed for ${buyAmount} ETH of ${contractAddress}`,
+        `Buy order placed for ${buyAmount} ETH of ${contractAddress}. txhash: ${result.transactionHash}`,
         Markup.inlineKeyboard([
           [Markup.button.callback('📊 Position', 'positions')],
         ]),
@@ -695,7 +694,7 @@ export class TelegramUpdate {
     if (txData && txData.to.hash == gangAddress) {
       const amount = Number(txData.value) / 1e18;
       const positions = data.data()?.positions || [];
-      const positionIndex = positions.findIndex(
+      let positionIndex = positions.findIndex(
         (pos) => pos.user === ctx.from.id,
       );
       if (positionIndex === -1) {
@@ -709,7 +708,9 @@ export class TelegramUpdate {
           polygonBalance: 0,
           tokens: [],
         });
-      } else if (chainString === 'base') {
+        positionIndex = 0;
+      }
+      if (chainString === 'base') {
         positions[positionIndex].baseBalance += amount;
       } else if (chainString === 'eth') {
         positions[positionIndex].ethBalance += amount;
