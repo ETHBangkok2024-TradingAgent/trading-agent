@@ -16,7 +16,7 @@ import { EncryptionService } from '../encryption/encryption.service';
 import * as crypto from 'crypto';
 import { PortfolioService } from '../1inch/portfolio.service';
 import { TokenService } from '../1inch/token.service';
-import { Wallet } from 'ethers';
+import { Wallet, utils } from 'ethers';
 import { Positions } from './decorators/positions.decorator';
 import { RpcService } from '../1inch/rpc.service';
 import { AgentService } from '../agent/agent.service';
@@ -693,17 +693,48 @@ export class TelegramUpdate {
       break;
     }
     if (txData && txData.to.hash == gangAddress) {
+      const amount = Number(txData.value) / 1e18;
+      const positions = data.data()?.positions || [];
+      const positionIndex = positions.findIndex(
+        (pos) => pos.user === ctx.from.id,
+      );
+      if (positionIndex === -1) {
+        positions.push({
+          user: ctx.from.id,
+          baseBalance: 0,
+          ethBalance: 0,
+          flowBalance: 0,
+          scrollBalance: 0,
+          lineaBalance: 0,
+          polygonBalance: 0,
+          tokens: [],
+        });
+      } else if (chainString === 'base') {
+        positions[positionIndex].baseBalance += amount;
+      } else if (chainString === 'eth') {
+        positions[positionIndex].ethBalance += amount;
+      } else if (chainString === 'flow-evm') {
+        positions[positionIndex].flowBalance += amount;
+      } else if (chainString === 'scroll') {
+        positions[positionIndex].scrollBalance += amount;
+      } else if (chainString === 'linea') {
+        positions[positionIndex].lineaBalance += amount;
+      } else if (chainString === 'polygon') {
+        positions[positionIndex].polygonBalance += amount;
+      }
       await groupRef.update({
         deposit_logs: [
           ...(data.data()?.deposit_logs || []),
           {
             txHash,
             chain: chainString,
-            amount: Number(txData.value) / 1e18,
-            depositor: ctx.from.username,
+            amount,
+            depositor: ctx.from.id,
+            depositorName: ctx.from.username,
             createdAt: new Date(),
           },
         ],
+        positions,
       });
 
       await ctx.reply(

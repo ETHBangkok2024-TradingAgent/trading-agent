@@ -40,7 +40,6 @@ export class PositionService {
     const raw = await this.rpcService.signTransaction(privateKey, chainId, tx);
     const receipt = await this.rpcService.broadcastTransaction(chainId, raw);
     const { transactionHash, blockNumber } = receipt;
-    console.log(receipt);
     // calculate amount out from receipt
     const iface = new Interface([
       'event Transfer(address indexed from, address indexed to, uint256 value)',
@@ -68,9 +67,11 @@ export class PositionService {
       transactionHash,
       blockNumber,
     };
-    const swapRef = this.firestore.collection('swaps').doc();
-    const result = await swapRef.set(swap);
-    console.log(result);
+    const groupRef = this.firestore.collection('groups').doc(group);
+    const data = await groupRef.get();
+    await groupRef.update({
+      swap_logs: [...(data.data()?.swap_logs || []), swap],
+    });
     // save position to firestore
     // const positionId = `${group}_${user}`;
     // const positionRef = this.firestore.collection('positions').doc();
