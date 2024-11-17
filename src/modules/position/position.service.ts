@@ -27,22 +27,47 @@ export class PositionService {
     const relatedTokens = data.data()?.related_tokens || [];
     const tokenMap = {};
     relatedTokens.forEach((token) => {
-      tokenMap[`${token.chainId}-${token.address}`] = token;
+      tokenMap[`${token.chainId}-${token.contractAddress.toLowerCase()}`] =
+        token;
     });
     const keys = Object.keys(tokenMap);
     while (keys.length > 0) {
       const token = tokenMap[keys.pop()];
       const { chainId, contractAddress } = token;
       const tokenInfo = await this.tokenService.getTokenInfo(
-        contractAddress,
+        [contractAddress.toLowerCase()],
         chainId,
       );
-      // const price = await this.tokenService.getPrice(
-      //   [contractAddress],
-      //   chainId,
-      // );
-      // console.log(price);
+      const price = await this.tokenService.getPrice(
+        [contractAddress.toLowerCase()],
+        chainId,
+      );
+      const tokenPrice = price[contractAddress.toLowerCase()];
+      tokenMap[`${token.chainId}-${token.contractAddress.toLowerCase()}`] = {
+        ...tokenInfo,
+        price: tokenPrice,
+      };
     }
+    // calculate each user position
+    const newPositions = positions.map((pos) => {
+      let totalBalance = 0;
+      pos.tokens = pos.tokens.map((token) => {
+        console.log(token);
+        const tokenInfo =
+          tokenMap[`${token.chainId}-${token.address.toLowerCase()}`];
+        const newToken = {
+          ...token,
+          ...tokenInfo,
+          marketCap: 50000000,
+          amountUSD: Number(token.amount) * tokenInfo.price,
+        };
+        const balance = token.amount * tokenInfo.price;
+        totalBalance += balance;
+        return newToken;
+      });
+      return pos;
+    });
+    return newPositions;
   }
 
   async buy(
