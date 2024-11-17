@@ -21,6 +21,8 @@ import { Positions } from './decorators/positions.decorator';
 import { RpcService } from '../1inch/rpc.service';
 import { AgentService } from '../agent/agent.service';
 import { PositionService } from '../position/position.service';
+import { SwapScrollService } from '../swapuniv2/swapscroll.service';
+import { SwapflowService } from '../swapuniv2/swapflow.service';
 
 @Update()
 export class TelegramUpdate {
@@ -35,6 +37,8 @@ export class TelegramUpdate {
     private readonly rpcService: RpcService,
     private readonly agentService: AgentService,
     private readonly positionService: PositionService,
+    private readonly swapScrollService: SwapScrollService,
+    private readonly swapFlowService: SwapflowService,
   ) {
     this.firestore = this.firebaseService.getFirestore();
   }
@@ -799,6 +803,28 @@ export class TelegramUpdate {
     } else {
       const welcomeMessage = `Welcome! Add me to your group to start trading.`;
       await ctx.reply(welcomeMessage);
+    }
+  }
+
+  @On('my_chat_member')
+  async onBotJoinGroup(@Ctx() ctx: Context) {
+    // Check if this is a new group join event
+    const update = ctx.update['my_chat_member'];
+    if (
+      update.new_chat_member.status === 'member' ||
+      update.new_chat_member.status === 'administrator'
+    ) {
+      // This is a new join event
+      const groupId = ctx.chat.id.toString();
+      if (ctx.chat.type != 'private') {
+        const groupName = ctx.chat.title ?? null;
+        // Send welcome message
+        await ctx.telegram.sendMessage(
+          groupId,
+          `Thanks for adding me to ${groupName}! 🚀\n\n` +
+            `To get started, please use the /start command to set up your trading wallet.`,
+        );
+      }
     }
   }
 }
