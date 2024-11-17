@@ -204,5 +204,7 @@ export class PositionService {
     const ethIn = Number(newEth) - Number(existingEth);
     console.log(ethIn.toString());
     console.log(receipt);
+    const { transactionHash, blockNumber } = receipt;
+    return { transactionHash, blockNumber };
   }
 }
