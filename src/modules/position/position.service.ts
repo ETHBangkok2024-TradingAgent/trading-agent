@@ -3,7 +3,7 @@ import { FirebaseService, Firestore } from '../firebase/firebase.service';
 import { EncryptionService } from '../encryption/encryption.service';
 import { SwapService } from '../1inch/swap.service';
 import { RpcService } from '../1inch/rpc.service';
-import { ethers, utils } from 'ethers';
+import { BigNumber, ethers, utils } from 'ethers';
 import { Interface } from 'ethers/lib/utils';
 import { TokenService } from '../1inch/token.service';
 
@@ -58,16 +58,7 @@ export class PositionService {
     const groupRef = this.firestore.collection('groups').doc(group);
     const data = await groupRef.get();
     const positions = data.data()?.positions || [];
-    const positionIndex = positions.findIndex(
-      (pos) => pos.user == Number(user),
-    );
-    let balance = 0;
-    if (chainId === 8453) {
-      balance = positions[positionIndex]?.baseBalance || 0;
-    }
-    if (balance < Number(amount)) {
-      throw new Error('Insufficient balance');
-    }
+    const totalShare = data.data()?.totalShare || 0;
     // swap
     const wallet = new ethers.Wallet(privateKey);
     const address = wallet.address;
@@ -107,23 +98,32 @@ export class PositionService {
       transactionHash,
       blockNumber,
     };
-    const tokenIndex = positions[positionIndex]?.tokens.findIndex(
-      (token) => token.address === tokenAddress,
-    );
-    if (tokenIndex === -1) {
-      positions[positionIndex].tokens.push({
-        address: tokenAddress,
-        amount: utils.formatUnits(amountOut, 18),
-      });
-    } else {
-      positions[positionIndex].tokens[tokenIndex].amount += utils.formatUnits(
-        amountOut,
-        18,
+    // update all user Positions
+    const newPositions = positions.map((pos) => {
+      const tokenIndex = pos?.tokens.findIndex(
+        (token) => token.address === tokenAddress,
       );
-    }
+      const amountOutString = utils.formatUnits(amountOut, 18);
+      const shareAmount = (Number(amountOutString) / totalShare) * pos.share;
+      let existingAmount = 0;
+      if (tokenIndex !== -1) {
+        existingAmount = Number(pos.tokens[tokenIndex]?.amount) || 0;
+      }
+      const tokenAmount = existingAmount + shareAmount;
+      if (tokenIndex === -1) {
+        pos.tokens.push({
+          address: tokenAddress,
+          chainId: chainId,
+          amount: tokenAmount,
+        });
+      } else {
+        pos.tokens[tokenIndex].amount = tokenAmount;
+      }
+      return pos;
+    });
     await groupRef.update({
       swap_logs: [...(data.data()?.swap_logs || []), swap],
-      positions,
+      positions: newPositions,
     });
     // save position to firestore
     return { transactionHash, blockNumber };
