@@ -5,6 +5,7 @@ import { EncryptionModule } from '../encryption/encryption.module';
 import { OneInchModule } from '../1inch/oneinch.module';
 import { AgentModule } from '../agent/agent.module';
 import { PositionModule } from '../position/position.module';
+import { SwapUniV2Module } from '../swapuniv2/swapuniv2.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { PositionModule } from '../position/position.module';
     OneInchModule,
     AgentModule,
     PositionModule,
+    SwapUniV2Module,
   ],
   providers: [TelegramUpdate],
 })
