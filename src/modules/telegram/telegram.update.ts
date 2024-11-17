@@ -261,6 +261,7 @@ export class TelegramUpdate {
     console.log(response);
 
     // TEMP
+    await this.positionService.getAllPositions(groupId);
     const positions = [
       {
         user: 'Alice',
@@ -277,9 +278,9 @@ export class TelegramUpdate {
             amountUSD: 5000,
             price: 0.000005,
             marketCap: 5000000,
-            avgEntry: 0.000004,
-            pnlUSD: 1000,
-            pnlPercentage: 25,
+            // avgEntry: 0.000004,
+            // pnlUSD: 1000,
+            // pnlPercentage: 25,
           },
           {
             name: 'Doge Token',
@@ -289,9 +290,9 @@ export class TelegramUpdate {
             amountUSD: 3000,
             price: 0.06,
             marketCap: 8000000,
-            avgEntry: 0.05,
-            pnlUSD: 500,
-            pnlPercentage: 20,
+            // avgEntry: 0.05,
+            // pnlUSD: 500,
+            // pnlPercentage: 20,
           },
         ],
       },
@@ -601,7 +602,6 @@ export class TelegramUpdate {
       const encryptedPrivateKey = data.data()?.encryptedPrivateKey;
       const decryptedPrivateKey =
         this.encryptionService.decrypt(encryptedPrivateKey);
-      console.log(decryptedPrivateKey);
       const result = await this.positionService.buy(
         groupId,
         userId,
@@ -658,6 +658,7 @@ export class TelegramUpdate {
     const groupRef = this.firestore.collection('groups').doc(groupId);
     const data = await groupRef.get();
     const gangAddress = data.data()?.address;
+    let totalShare = data.data()?.totalShare || 0;
 
     // Check if txHash already exists in deposit_logs
     const existingLogs = data.data()?.deposit_logs || [];
@@ -700,6 +701,7 @@ export class TelegramUpdate {
       if (positionIndex === -1) {
         positions.push({
           user: ctx.from.id,
+          share: 0,
           baseBalance: 0,
           ethBalance: 0,
           flowBalance: 0,
@@ -710,6 +712,8 @@ export class TelegramUpdate {
         });
         positionIndex = 0;
       }
+      totalShare += amount;
+      positions[positionIndex].share += amount;
       if (chainString === 'base') {
         positions[positionIndex].baseBalance += amount;
       } else if (chainString === 'eth') {
@@ -736,6 +740,7 @@ export class TelegramUpdate {
           },
         ],
         positions,
+        totalShare,
       });
 
       await ctx.reply(

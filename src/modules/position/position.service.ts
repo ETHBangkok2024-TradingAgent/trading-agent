@@ -5,6 +5,7 @@ import { SwapService } from '../1inch/swap.service';
 import { RpcService } from '../1inch/rpc.service';
 import { ethers, utils } from 'ethers';
 import { Interface } from 'ethers/lib/utils';
+import { TokenService } from '../1inch/token.service';
 
 @Injectable()
 export class PositionService {
@@ -13,8 +14,35 @@ export class PositionService {
     private readonly firebaseService: FirebaseService,
     private readonly swapService: SwapService,
     private readonly rpcService: RpcService,
+    private readonly tokenService: TokenService,
   ) {
     this.firestore = this.firebaseService.getFirestore();
+  }
+
+  async getAllPositions(group: string) {
+    const groupRef = this.firestore.collection('groups').doc(group);
+    const data = await groupRef.get();
+    const positions = data.data()?.positions || [];
+    // find all token address
+    const relatedTokens = data.data()?.related_tokens || [];
+    const tokenMap = {};
+    relatedTokens.forEach((token) => {
+      tokenMap[`${token.chainId}-${token.address}`] = token;
+    });
+    const keys = Object.keys(tokenMap);
+    while (keys.length > 0) {
+      const token = tokenMap[keys.pop()];
+      const { chainId, contractAddress } = token;
+      const tokenInfo = await this.tokenService.getTokenInfo(
+        contractAddress,
+        chainId,
+      );
+      // const price = await this.tokenService.getPrice(
+      //   [contractAddress],
+      //   chainId,
+      // );
+      // console.log(price);
+    }
   }
 
   async buy(
@@ -26,7 +54,6 @@ export class PositionService {
     slippage: number,
     privateKey: string,
   ) {
-    console.log(group);
     // check balance
     const groupRef = this.firestore.collection('groups').doc(group);
     const data = await groupRef.get();
@@ -34,14 +61,10 @@ export class PositionService {
     const positionIndex = positions.findIndex(
       (pos) => pos.user == Number(user),
     );
-    console.log(user);
-    console.log(positionIndex);
-    console.log(positions[positionIndex]);
     let balance = 0;
     if (chainId === 8453) {
       balance = positions[positionIndex]?.baseBalance || 0;
     }
-    console.log(balance);
     if (balance < Number(amount)) {
       throw new Error('Insufficient balance');
     }
