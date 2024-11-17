@@ -83,4 +83,40 @@ export class SwapService {
     };
     return transaction;
   }
+
+  async generateCallDataForApprove(
+    chainId: number,
+    token: string,
+    amount: string,
+    tokenDecimal: number = 18,
+  ) {
+    const url = `https://api.1inch.dev/swap/v6.0/${chainId}/approve/transaction`;
+    const ethAmount = utils.parseUnits(amount, tokenDecimal);
+    const response = await lastValueFrom(
+      this.httpService.get(url, {
+        params: {
+          token,
+          amount: ethAmount.toString(),
+          chain: chainId,
+        },
+        paramsSerializer: {
+          indexes: null,
+        },
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+      }),
+    );
+    const data = response.data;
+    const tx = data.tx;
+    const transaction = {
+      to: tx.to,
+      data: tx.data,
+      value: BigNumber.from(tx.value),
+      gasPrice: BigNumber.from(tx.gasPrice),
+      gasLimit: utils.hexlify(tx.gas),
+      chainId,
+    };
+    return transaction;
+  }
 }

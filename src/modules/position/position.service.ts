@@ -153,4 +153,56 @@ export class PositionService {
     // save position to firestore
     return { transactionHash, blockNumber };
   }
+
+  async sell(
+    group: string,
+    user: string,
+    chainId: number,
+    tokenAddress: string,
+    slippage: number,
+    privateKey: string,
+  ) {
+    const groupRef = this.firestore.collection('groups').doc(group);
+    const data = await groupRef.get();
+    const positions = data.data()?.positions || [];
+    const positionIndex = positions.findIndex(
+      (pos) => pos.user === Number(user),
+    );
+    const position = positions[positionIndex];
+    const tokenIndex = position.tokens.findIndex(
+      (token) => token.address === tokenAddress,
+    );
+    const tokenPosition = position.tokens[tokenIndex];
+    const amount = tokenPosition.amount;
+    const wallet = new ethers.Wallet(privateKey);
+    const address = wallet.address;
+    // approve first
+    const approveTx = await this.swapService.generateCallDataForApprove(
+      chainId,
+      tokenAddress,
+      amount,
+    );
+    const rawApproveTx = await this.rpcService.signTransaction(
+      privateKey,
+      chainId,
+      approveTx,
+    );
+    await this.rpcService.broadcastTransaction(chainId, rawApproveTx);
+    // swap
+    const tx = await this.swapService.generateCallDataForSwap(
+      chainId,
+      tokenAddress,
+      '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+      amount,
+      address,
+      slippage,
+    );
+    const existingEth = await this.rpcService.getEtherBalance(address, chainId);
+    const raw = await this.rpcService.signTransaction(privateKey, chainId, tx);
+    const receipt = await this.rpcService.broadcastTransaction(chainId, raw);
+    const newEth = await this.rpcService.getEtherBalance(address, chainId);
+    const ethIn = Number(newEth) - Number(existingEth);
+    console.log(ethIn.toString());
+    console.log(receipt);
+  }
 }
