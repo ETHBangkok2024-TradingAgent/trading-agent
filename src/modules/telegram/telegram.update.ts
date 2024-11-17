@@ -46,7 +46,7 @@ export class TelegramUpdate {
   private createBuyButtons(
     contractAddress: string,
     chainId: number,
-    amounts: number[] = [0.1, 0.2, 0.5],
+    amounts: number[] = [0.0001, 0.2, 0.5],
   ) {
     return amounts.map((amount) =>
       Markup.button.callback(
@@ -78,7 +78,39 @@ export class TelegramUpdate {
     if (chainIdString.toLowerCase() === 'base') {
       chainId = 8453;
     }
+    if (chainIdString.toLowerCase() === 'scroll') {
+      chainId = 534352;
+    }
+    if (chainIdString.toLowerCase() === 'linea') {
+      chainId = 59144;
+    }
+    if (chainIdString.toLowerCase() === 'flow') {
+      chainId = 747;
+    }
+    if (chainIdString.toLowerCase() === 'polygon') {
+      chainId = 137;
+    }
     return chainId;
+  }
+
+  private getChainName(chainId: number) {
+    let chainName = 'eth';
+    if (chainId === 8453) {
+      chainName = 'base';
+    }
+    if (chainId === 534352) {
+      chainName = 'scroll';
+    }
+    if (chainId === 59144) {
+      chainName = 'linea';
+    }
+    if (chainId === 747) {
+      chainName = 'flow-evm';
+    }
+    if (chainId === 137) {
+      chainName = 'polygon';
+    }
+    return chainName;
   }
 
   @Start()
@@ -611,7 +643,7 @@ export class TelegramUpdate {
         userId,
         Number(chainId),
         contractAddress,
-        '0.001',
+        amount,
         slippage,
         decryptedPrivateKey,
       );
@@ -626,10 +658,19 @@ export class TelegramUpdate {
       });
 
       await ctx.reply(
-        `Buy order placed for ${buyAmount} ETH of ${contractAddress}. txhash: ${result.transactionHash}`,
-        Markup.inlineKeyboard([
-          [Markup.button.callback('📊 Position', 'positions')],
-        ]),
+        `*🎯 Buy Order Successful!*\n\n` +
+          `*Amount:* ${buyAmount} ETH\n` +
+          `*Token:* \`${contractAddress}\`\n` +
+          `*Transaction:* \`https://${this.getChainName(
+            Number(chainId),
+          )}.blockscout.com/tx/${result.transactionHash}\`\n\n` +
+          `_Your position has been updated_ ✨`,
+        {
+          parse_mode: 'Markdown',
+          ...Markup.inlineKeyboard([
+            [Markup.button.callback('📊 View Position', 'positions')],
+          ]),
+        },
       );
     } catch (error) {
       console.error('Error processing buy:', error);
@@ -756,7 +797,6 @@ export class TelegramUpdate {
         {
           parse_mode: 'Markdown',
           ...Markup.inlineKeyboard([
-            [Markup.button.callback('🔄 Refresh Balance', 'refresh_balance')],
             [Markup.button.callback('🏠 Home', 'start')],
           ]),
         },
